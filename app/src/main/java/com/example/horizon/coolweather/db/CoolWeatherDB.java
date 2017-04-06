@@ -38,9 +38,6 @@ public class CoolWeatherDB {
         db = dbHelper.getWritableDatabase();
     }
 
-
-
-
     /**
      * 获取CoolWeatherDB实例
      */
