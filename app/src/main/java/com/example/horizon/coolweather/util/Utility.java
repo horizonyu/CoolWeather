@@ -30,7 +30,6 @@ public class Utility {
     public synchronized static boolean handleProvinceResponse(CoolWeatherDB coolWeatherDB, String response) {
         if (!TextUtils.isEmpty(response)) {
             try {
-                List<JSONObject> list = new ArrayList<>();
                 JSONArray jsonArray = new JSONArray(response);
                 for (int i = 0; i < jsonArray.length(); i++) {
                     JSONObject jsonObject = jsonArray.getJSONObject(i);

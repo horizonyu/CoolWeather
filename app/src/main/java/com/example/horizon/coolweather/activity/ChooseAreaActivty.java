@@ -1,9 +1,9 @@
 package com.example.horizon.coolweather.activity;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,7 +23,7 @@ import com.example.horizon.coolweather.util.Utility;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChooseAreaActivty extends AppCompatActivity {
+public class ChooseAreaActivty extends Activity {
 
     public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
@@ -67,7 +67,7 @@ public class ChooseAreaActivty extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.choose_area);
-        requestWindowFeature(getWindow().FEATURE_NO_TITLE);
+//        requestWindowFeature(getWindow().FEATURE_NO_TITLE);
         initUi();
 
         coolWeatherDB = CoolWeatherDB.getInstance(this);
@@ -111,7 +111,8 @@ public class ChooseAreaActivty extends AppCompatActivity {
             currentLevel = LEVEL_PROVINCE;
         } else {
             //从服务器查询
-            queryFromServer(null, "province");
+            String address = "http://guolin.tech/api/china";
+            queryFromServer(address, "province");
         }
     }
 
@@ -130,7 +131,9 @@ public class ChooseAreaActivty extends AppCompatActivity {
             tv_title.setText(selectedProvince.getProvinceName());
             currentLevel = LEVEL_CITY;
         } else {
-            queryFromServer(selectedProvince.getProvinceCode(), "city");
+            String provinceCode = selectedProvince.getProvinceCode();
+            String address = "http://guolin.tech/api/china/" + provinceCode;
+            queryFromServer(address, "city");
         }
 
     }
@@ -151,22 +154,27 @@ public class ChooseAreaActivty extends AppCompatActivity {
             tv_title.setText(selectedCity.getCityName());
             currentLevel = LEVEL_COUNTY;
         } else {
-            queryFromServer(selectedCity.getCityCode(), "county");
+            String proviceCode = selectedProvince.getProvinceCode();
+            String cityCode = selectedCity.getCityCode();
+            String address = "http://guolin.tech/api/china/" + proviceCode + "/" + cityCode;
+            queryFromServer(address, "county");
+//            Toast.makeText(getApplicationContext(),address,Toast.LENGTH_SHORT).show();
+            Log.d("address : ", address);
         }
     }
 
     /**
-     * @param code 省市县的代码
+     * @param address 省市县的代码
      * @param type 省市县等级
      *             根据传入的代号和类型向服务器查询省市县数据
      */
-    private void queryFromServer(final String code, final String type) {
-        String address;
-        if (!TextUtils.isEmpty(code)) {
-            address = "http://guolin.tech/api/china/" + code + ".xml";
-        } else {
-            address = "http://guolin.tech/api/china";
-        }
+    private void queryFromServer(final String address, final String type) {
+//        String address;
+//        if (!TextUtils.isEmpty(code)) {
+//            address = "http://guolin.tech/api/china/" + code + ".xml";
+//        } else {
+//            address = "http://guolin.tech/api/china";
+//        }
         showProgressDialog();
         HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
             @Override
@@ -246,7 +254,6 @@ public class ChooseAreaActivty extends AppCompatActivity {
      */
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         if (currentLevel == LEVEL_COUNTY){
             queryCities();
         }else if (currentLevel == LEVEL_CITY){
