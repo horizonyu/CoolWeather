@@ -49,5 +49,6 @@ public class CoolWeatherOpenHelper extends SQLiteOpenHelper {
             "id integer primary key autocrement, " +
             "county_name text, " +
             "county_code text, " +
-            "city_id integer)";
+            "city_id integer" +
+            "weather_id integer)";
 }
