@@ -2,6 +2,8 @@ package com.example.horizon.coolweather.activity;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
@@ -11,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.WindowManager;
 
 import com.bumptech.glide.Glide;
 import com.example.horizon.coolweather.R;
@@ -47,6 +50,23 @@ public class WeatherActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //实现将背景与状态栏完美融合,并且由于这一功能是在Android 5.0 及以上的系统才支持的，所以预先进行一个判断。
+        if (Build.VERSION.SDK_INT >= 21){
+            View decorView = getWindow().getDecorView();
+            //改变系统UI显示方法
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+
+            //将状态栏设置成透明色
+            //取消设置透明状态栏,使 ContentView 内容不再覆盖状态栏
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            //需要设置这个 flag 才能调用 setStatusBarColor 来设置状态栏颜色
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            //设置状态栏颜色
+            getWindow().setStatusBarColor(Color.TRANSPARENT);
+            Toast.makeText(this,"fullsreen",Toast.LENGTH_SHORT).show();
+        }
+
         setContentView(R.layout.activity_weather);
 
         //初始化控件
