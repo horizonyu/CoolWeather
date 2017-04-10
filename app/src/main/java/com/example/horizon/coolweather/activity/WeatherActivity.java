@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -22,6 +23,8 @@ import com.example.horizon.coolweather.gson.Weather;
 import com.example.horizon.coolweather.util.HttpCallbackListener;
 import com.example.horizon.coolweather.util.HttpUtil;
 import com.example.horizon.coolweather.util.Utility;
+
+//TODO 使用okHttp进行网络请求
 
 /**
  * Created by horizon on 4/7/2017.
@@ -47,11 +50,64 @@ public class WeatherActivity extends Activity {
     private TextView tv_max_item;
     private TextView tv_min_item;
 
+    public SwipeRefreshLayout swipeRefreshLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //实现将背景与状态栏完美融合,并且由于这一功能是在Android 5.0 及以上的系统才支持的，所以预先进行一个判断。
-        if (Build.VERSION.SDK_INT >= 21){
+        //实现背景与状态栏的融合
+        combineBackStatus();
+        setContentView(R.layout.activity_weather);
+        //初始化控件
+        initUI();
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        //从本地获取图片，设置为背景图片
+        String bingPic = prefs.getString("bing_pic", null);
+        if (bingPic != null) {
+            Glide.with(this).load(bingPic).into(iv_bing_pic_bg);
+        } else {
+            //本地不存在图片则从网络获取
+            loadBingPic();
+        }
+
+        //获取天气数据
+        String weatherString = prefs.getString("weather", null);
+        final String weatherId;
+        if (weatherString != null) {
+            //如果存在缓存则直接解析天气数据
+            Weather weather = Utility.handleWeatherResponse(weatherString);
+
+            weatherId = weather.basic.weatherId;
+
+            showWeatherInfo(weather);
+        } else {
+            //没有缓存则直接从服务器中获取数据
+            weatherId = getIntent().getStringExtra("weather_id");
+            weatherLayout.setVisibility(View.VISIBLE);
+            requestWeather(weatherId);
+
+        }
+
+        //下拉页面进行更新天气信息
+        refreshWeatherData(weatherId);
+    }
+
+    private void refreshWeatherData(final String weatherId) {
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(weatherId);
+            }
+        });
+    }
+
+    /**
+     * 实现将背景与状态栏完美融合,并且
+     */
+    private void combineBackStatus() {
+        //由于这一功能是在Android 5.0 及以上的系统才支持的，所以预先进行一个判断。
+        if (Build.VERSION.SDK_INT >= 21) {
             View decorView = getWindow().getDecorView();
             //改变系统UI显示方法
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -64,43 +120,14 @@ public class WeatherActivity extends Activity {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             //设置状态栏颜色
             getWindow().setStatusBarColor(Color.TRANSPARENT);
-            Toast.makeText(this,"fullsreen",Toast.LENGTH_SHORT).show();
-        }
-
-        setContentView(R.layout.activity_weather);
-
-        //初始化控件
-        initUI();
-
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        //从本地获取图片进行设置
-        String bingPic = prefs.getString("bing_pic",null);
-        if (bingPic != null){
-            Glide.with(this).load(bingPic).into(iv_bing_pic_bg);
-        }else {
-            //本地不存在图片则从网络获取
-            loadBingPic();
-        }
-
-        String weatherString = prefs.getString("weather", null);
-        if (weatherString != null){
-            //如果存在缓存则直接解析天气数据
-            Weather weather = Utility.handleWeatherResponse(weatherString);
-            showWeatherInfo(weather);
-        }else {
-            //没有缓存则直接从服务器中获取数据
-            String weatherId = getIntent().getStringExtra("weather_id");
-            weatherLayout.setVisibility(View.VISIBLE);
-            requestWeather(weatherId);
-
+            Toast.makeText(this, "fullsreen", Toast.LENGTH_SHORT).show();
         }
     }
 
 
-
     /**
      * 根据天气id请求天气数据
+     *
      * @param weatherId
      */
     private void requestWeather(String weatherId) {
@@ -115,16 +142,17 @@ public class WeatherActivity extends Activity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (weather != null && weather.status.equals("ok")){
+                        if (weather != null && weather.status.equals("ok")) {
                             SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit();
-                            editor.putString("weather",response);
+                            editor.putString("weather", response);
                             editor.apply();
                             showWeatherInfo(weather);
 
-                        }else {
-                            Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
 
                         }
+                        swipeRefreshLayout.setRefreshing(false);
                     }
                 });
             }
@@ -135,7 +163,8 @@ public class WeatherActivity extends Activity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
+                        swipeRefreshLayout.setRefreshing(false);
                     }
                 });
 
@@ -154,13 +183,13 @@ public class WeatherActivity extends Activity {
             @Override
             public void onFinish(final String response) {
                 SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
-                edit.putString("bing_pic",response);
+                edit.putString("bing_pic", response);
                 edit.apply();
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         //Glide ，加载图片的类库，下面就是其使用方法
-                         Glide.with(WeatherActivity.this).load(response).into(iv_bing_pic_bg);
+                        Glide.with(WeatherActivity.this).load(response).into(iv_bing_pic_bg);
 
                     }
                 });
@@ -175,6 +204,7 @@ public class WeatherActivity extends Activity {
 
     /**
      * 处理并展示Weather实体类中的数据
+     *
      * @param weather
      */
     private void showWeatherInfo(Weather weather) {
@@ -188,12 +218,12 @@ public class WeatherActivity extends Activity {
         tv_degree.setText(degree);
         tv_weather_info.setText(weatherInfo);
         forecastLayout.removeAllViews();
-        for (Forecast forecast : weather.forecastList){
+        for (Forecast forecast : weather.forecastList) {
             View view = LayoutInflater.from(this).inflate(R.layout.forecast_item,
                     forecastLayout, false);
 
             tv_date_item = (TextView) view.findViewById(R.id.tv_date_item);
-            tv_info_item = (TextView) view.findViewById(R.id.tv_info_item );
+            tv_info_item = (TextView) view.findViewById(R.id.tv_info_item);
             tv_max_item = (TextView) view.findViewById(R.id.tv_max_item);
             tv_min_item = (TextView) view.findViewById(R.id.tv_min_item);
 
@@ -204,7 +234,7 @@ public class WeatherActivity extends Activity {
             forecastLayout.addView(view);
 
         }
-        if (weather.aqi != null){
+        if (weather.aqi != null) {
             tv_aqi.setText(weather.aqi.city.aqi);
             tv_pm25.setText(weather.aqi.city.pm25);
         }
@@ -234,6 +264,9 @@ public class WeatherActivity extends Activity {
         //背景图片
         iv_bing_pic_bg = (ImageView) findViewById(R.id.iv_bing_pic_bg);
 
+        //刷新更新天气
+        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swip_refresh);
+        swipeRefreshLayout.setColorSchemeColors(R.color.colorPrimary);
 
     }
 }
