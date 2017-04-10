@@ -3,9 +3,11 @@ package com.example.horizon.coolweather.util;
 import android.text.TextUtils;
 
 import com.example.horizon.coolweather.db.CoolWeatherDB;
+import com.example.horizon.coolweather.gson.Weather;
 import com.example.horizon.coolweather.model.City;
 import com.example.horizon.coolweather.model.County;
 import com.example.horizon.coolweather.model.Province;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -110,6 +112,25 @@ public class Utility {
         return false;
     }
 
+    /**
+     * 将返回的Json数据解析成Weather实体类
+     */
+    public synchronized static Weather handleWeatherResponse(String response){
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
+            String weatherContent = jsonArray.getJSONObject(0).toString();
+
+            //上面两步将天气数据主体内容解析出来，下面将Json数据转化成Weather对象
+            return new Gson().fromJson(weatherContent,Weather.class);
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
 
     /**
      * 解析和处理服务器返回的省级数据
