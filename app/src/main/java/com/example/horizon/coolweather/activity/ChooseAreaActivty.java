@@ -2,6 +2,7 @@ package com.example.horizon.coolweather.activity;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -80,6 +81,17 @@ public class ChooseAreaActivty extends Activity {
                 }else if (currentLevel == LEVEL_CITY){
                     selectedCity = cityList.get(position);
                     queryCounties();
+                }else if (currentLevel == LEVEL_COUNTY){
+                    //点击县区时，获取某一县区的天气信息
+                    String weatherId = countyList.get(position).getWeatherId();
+                    Intent intent = new Intent(ChooseAreaActivty.this,WeatherActivity.class);
+
+                    //将天气代码传入activity中
+                    intent.putExtra("weather_id",weatherId);
+                    startActivity(intent);
+
+                    //当跳转到WeatherActivity之后，此activity关闭
+                    ChooseAreaActivty.this.finish();
                 }
             }
         });
