@@ -4,12 +4,15 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.view.*;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.horizon.coolweather.R;
 import com.example.horizon.coolweather.gson.Forecast;
 import com.example.horizon.coolweather.gson.Weather;
@@ -33,6 +36,7 @@ public class WeatherActivity extends Activity {
     private TextView tv_comfort;
     private TextView tv_carwash;
     private TextView tv_sport;
+    private ImageView iv_bing_pic_bg;
 
 
     private TextView tv_date_item;
@@ -48,7 +52,17 @@ public class WeatherActivity extends Activity {
         //初始化控件
         initUI();
 
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        //从本地获取图片进行设置
+        String bingPic = prefs.getString("bing_pic",null);
+        if (bingPic != null){
+            Glide.with(this).load(bingPic).into(iv_bing_pic_bg);
+        }else {
+            //本地不存在图片则从网络获取
+            loadBingPic();
+        }
+
         String weatherString = prefs.getString("weather", null);
         if (weatherString != null){
             //如果存在缓存则直接解析天气数据
@@ -62,6 +76,8 @@ public class WeatherActivity extends Activity {
 
         }
     }
+
+
 
     /**
      * 根据天气id请求天气数据
@@ -102,6 +118,36 @@ public class WeatherActivity extends Activity {
                         Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
                     }
                 });
+
+            }
+        });
+        //并且每次在更新天气信息时，从网络获取新的背景图片
+        loadBingPic();
+    }
+
+    /**
+     * 加载背景图片(从必应官网获取)
+     */
+    private void loadBingPic() {
+        String requestBingPic = "http://guolin.tech/api/bing_pic";
+        HttpUtil.sendHttpRequest(requestBingPic, new HttpCallbackListener() {
+            @Override
+            public void onFinish(final String response) {
+                SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
+                edit.putString("bing_pic",response);
+                edit.apply();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //Glide ，加载图片的类库，下面就是其使用方法
+                         Glide.with(WeatherActivity.this).load(response).into(iv_bing_pic_bg);
+
+                    }
+                });
+            }
+
+            @Override
+            public void onError(Exception e) {
 
             }
         });
@@ -164,6 +210,9 @@ public class WeatherActivity extends Activity {
         tv_comfort = (TextView) findViewById(R.id.tv_comfort);
         tv_carwash = (TextView) findViewById(R.id.tv_washcar);
         tv_sport = (TextView) findViewById(R.id.tv_sport);
+
+        //背景图片
+        iv_bing_pic_bg = (ImageView) findViewById(R.id.iv_bing_pic_bg);
 
 
     }

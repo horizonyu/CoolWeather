@@ -9,7 +9,7 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:textColor="#fff"
-        android:textSize="20sp" />
+        android:textSize="30sp" />
 
     <TextView
         android:id="@+id/tv_update_time"
@@ -19,7 +19,7 @@
         android:layout_centerVertical="true"
         android:layout_marginRight="10dp"
         android:textColor="#fff"
-        android:textSize="16sp" />
+        android:textSize="18sp" />
 
 
 </RelativeLayout>
