@@ -1,6 +1,7 @@
 package com.example.horizon.coolweather.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -9,6 +10,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -43,6 +45,7 @@ public class WeatherActivity extends Activity {
     private TextView tv_carwash;
     private TextView tv_sport;
     private ImageView iv_bing_pic_bg;
+    private Button bt_change_location;
 
 
     private TextView tv_date_item;
@@ -73,8 +76,9 @@ public class WeatherActivity extends Activity {
 
         //获取天气数据
         String weatherString = prefs.getString("weather", null);
+        boolean fromWeather = prefs.getBoolean("isFromWeatherActivity",false);
         final String weatherId;
-        if (weatherString != null) {
+        if (weatherString != null && !fromWeather) {
             //如果存在缓存则直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
 
@@ -91,6 +95,22 @@ public class WeatherActivity extends Activity {
 
         //下拉页面进行更新天气信息
         refreshWeatherData(weatherId);
+
+        //更换天气地址
+        changeLocation();
+    }
+
+    private void changeLocation() {
+        bt_change_location.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                //跳转到ChooseAreaActivity
+                Intent intent = new Intent(WeatherActivity.this, ChooseAreaActivty.class);
+                intent.putExtra("isFromWeatherActivity",true);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 
     private void refreshWeatherData(final String weatherId) {
@@ -267,6 +287,9 @@ public class WeatherActivity extends Activity {
         //刷新更新天气
         swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swip_refresh);
         swipeRefreshLayout.setColorSchemeColors(R.color.colorPrimary);
+
+        //更换地址
+        bt_change_location = (Button) findViewById(R.id.bt_change_location);
 
     }
 }

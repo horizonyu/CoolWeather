@@ -1,11 +1,14 @@
 package com.example.horizon.coolweather.activity;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.app.Fragment;
+
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -24,8 +27,12 @@ import com.example.horizon.coolweather.util.Utility;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChooseAreaActivty extends Activity {
 
+/**
+ * Created by horizon on 4/11/2017.
+ */
+
+public class ChooseAreaFragment extends Fragment {
     public static final int LEVEL_PROVINCE = 0;
     public static final int LEVEL_CITY = 1;
     public static final int LEVEL_COUNTY = 2;
@@ -63,19 +70,25 @@ public class ChooseAreaActivty extends Activity {
      */
     private int currentLevel;
 
-    /**
-     * 是否从WeatherActivity跳转过来
-     */
-    private Boolean isFromWeatherActivity;
 
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.choose_area);
-        initUi();
+    public View onCreateView(LayoutInflater inflater,  ViewGroup container,  Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.choose_area, container, false);
+        tv_title = (TextView) view.findViewById(R.id.tv_title);
+        lv_areas_list = (ListView) view.findViewById(R.id.lv_areas_list);
+        adapter = new ArrayAdapter<String>(getActivity().getApplicationContext(), android.R.layout.simple_list_item_1,dataList);
+        lv_areas_list.setAdapter(adapter);
 
-        coolWeatherDB = CoolWeatherDB.getInstance(this);
+        return view;
+
+    }
+
+    @Override
+    public void onActivityCreated( Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        coolWeatherDB = CoolWeatherDB.getInstance(getActivity().getApplicationContext());
         lv_areas_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -88,7 +101,7 @@ public class ChooseAreaActivty extends Activity {
                 }else if (currentLevel == LEVEL_COUNTY){
                     //点击县区时，获取某一县区的天气信息
                     String weatherId = countyList.get(position).getWeatherId();
-                    Intent intent = new Intent(ChooseAreaActivty.this,WeatherActivity.class);
+                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
 
                     //将天气代码传入activity中
                     intent.putExtra("weather_id",weatherId);
@@ -101,18 +114,6 @@ public class ChooseAreaActivty extends Activity {
         });
         //加载省级数据
         queryProvinces();
-    }
-
-    private boolean fromWeatherActivity() {
-        isFromWeatherActivity = getIntent().getBooleanExtra("isFromWeatherActivity",false);
-        return isFromWeatherActivity;
-    }
-
-    private void initUi() {
-        tv_title = (TextView) findViewById(R.id.tv_title);
-        lv_areas_list = (ListView) findViewById(R.id.lv_areas_list);
-        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,dataList);
-        lv_areas_list.setAdapter(adapter);
     }
 
     /**
@@ -179,7 +180,6 @@ public class ChooseAreaActivty extends Activity {
             String cityCode = selectedCity.getCityCode();
             String address = "http://guolin.tech/api/china/" + proviceCode + "/" + cityCode;
             queryFromServer(address, "county");
-//            Toast.makeText(getApplicationContext(),address,Toast.LENGTH_SHORT).show();
             Log.d("address : ", address);
         }
     }
@@ -190,12 +190,7 @@ public class ChooseAreaActivty extends Activity {
      *             根据传入的代号和类型向服务器查询省市县数据
      */
     private void queryFromServer(final String address, final String type) {
-//        String address;
-//        if (!TextUtils.isEmpty(code)) {
-//            address = "http://guolin.tech/api/china/" + code + ".xml";
-//        } else {
-//            address = "http://guolin.tech/api/china";
-//        }
+
         showProgressDialog();
         HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
             @Override
@@ -214,7 +209,7 @@ public class ChooseAreaActivty extends Activity {
 
                 if (result) {
                     //通过runOnUiThread()方法回到主线程处理逻辑
-                    runOnUiThread(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             closeProgressDialog();
@@ -237,11 +232,11 @@ public class ChooseAreaActivty extends Activity {
             @Override
             public void onError(Exception e) {
                 //通过runOnUiThread()方法回到主线程处理逻辑
-                runOnUiThread(new Runnable() {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         closeProgressDialog();
-                        Toast.makeText(ChooseAreaActivty.this, "加载失败", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), "加载失败", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -253,7 +248,7 @@ public class ChooseAreaActivty extends Activity {
      */
     private void showProgressDialog() {
         if (progressDialog == null) {
-            progressDialog = new ProgressDialog(this);
+            progressDialog = new ProgressDialog(getActivity());
             progressDialog.setMessage("正在加载...");
             progressDialog.setCanceledOnTouchOutside(false);
         }
@@ -270,21 +265,23 @@ public class ChooseAreaActivty extends Activity {
         }
     }
 
-    /**
-     * 捕获back键，根据当前的级别来判断，此时应该返回市列表、省列表，还是直接退出。
-     */
-    @Override
-    public void onBackPressed() {
-        if (currentLevel == LEVEL_COUNTY){
-            queryCities();
-        }else if (currentLevel == LEVEL_CITY){
-            queryProvinces();
-        }else {
-            if (isFromWeatherActivity){
-                Intent intent = new Intent(this, WeatherActivity.class);
-                startActivity(intent);
-            }
-            finish();
-        }
-    }
+//    /**
+//     * 捕获back键，根据当前的级别来判断，此时应该返回市列表、省列表，还是直接退出。
+//     */
+//    @Override
+//    public void onBackPressed() {
+//        if (currentLevel == LEVEL_COUNTY){
+//            queryCities();
+//        }else if (currentLevel == LEVEL_CITY){
+//            queryProvinces();
+//        }else {
+//            if (isFromWeatherActivity){
+//                Intent intent = new Intent(this, WeatherActivity.class);
+//                startActivity(intent);
+//            }
+//            finish();
+//        }
+//    }
+
+
 }
