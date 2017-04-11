@@ -1,22 +1,23 @@
 package com.example.horizon.coolweather.activity;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.view.WindowManager;
 
 import com.bumptech.glide.Glide;
 import com.example.horizon.coolweather.R;
@@ -27,7 +28,7 @@ import com.example.horizon.coolweather.util.HttpUtil;
 import com.example.horizon.coolweather.util.Utility;
 
 //TODO 使用okHttp进行网络请求
-
+//TODO 同时存在小bug,在选择显示地区时，重复刷新页面两次，会显示上一次选择的地方。
 /**
  * Created by horizon on 4/7/2017.
  */
@@ -46,6 +47,7 @@ public class WeatherActivity extends Activity {
     private TextView tv_sport;
     private ImageView iv_bing_pic_bg;
     private Button bt_change_location;
+    public DrawerLayout drawerLayout;
 
 
     private TextView tv_date_item;
@@ -76,9 +78,8 @@ public class WeatherActivity extends Activity {
 
         //获取天气数据
         String weatherString = prefs.getString("weather", null);
-        boolean fromWeather = prefs.getBoolean("isFromWeatherActivity",false);
         final String weatherId;
-        if (weatherString != null && !fromWeather) {
+        if (weatherString != null ) {
             //如果存在缓存则直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
 
@@ -93,6 +94,7 @@ public class WeatherActivity extends Activity {
 
         }
 
+
         //下拉页面进行更新天气信息
         refreshWeatherData(weatherId);
 
@@ -104,19 +106,19 @@ public class WeatherActivity extends Activity {
         bt_change_location.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //跳转到ChooseAreaActivity
-                Intent intent = new Intent(WeatherActivity.this, ChooseAreaActivty.class);
-                intent.putExtra("isFromWeatherActivity",true);
-                startActivity(intent);
-                finish();
+                //打开滑动菜单
+                drawerLayout.openDrawer(GravityCompat.START);
+
             }
         });
     }
 
     private void refreshWeatherData(final String weatherId) {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
+//                String weatherId = preferences.getString("weather_id", null);
                 requestWeather(weatherId);
             }
         });
@@ -150,7 +152,7 @@ public class WeatherActivity extends Activity {
      *
      * @param weatherId
      */
-    private void requestWeather(String weatherId) {
+    public void requestWeather(final String weatherId) {
         //根据天气id以及和风天气的个人认证key拼接请求的链接
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=c90d37e0141f4845a7c5ee3cb378a2c2";
 
@@ -290,6 +292,9 @@ public class WeatherActivity extends Activity {
 
         //更换地址
         bt_change_location = (Button) findViewById(R.id.bt_change_location);
+
+        //隐藏的碎片
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
     }
 }

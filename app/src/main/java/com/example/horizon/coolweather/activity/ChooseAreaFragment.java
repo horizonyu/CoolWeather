@@ -1,10 +1,11 @@
 package com.example.horizon.coolweather.activity;
 
+import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.app.Fragment;
-
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -71,13 +72,13 @@ public class ChooseAreaFragment extends Fragment {
     private int currentLevel;
 
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater,  ViewGroup container,  Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.choose_area, container, false);
         tv_title = (TextView) view.findViewById(R.id.tv_title);
         lv_areas_list = (ListView) view.findViewById(R.id.lv_areas_list);
-        adapter = new ArrayAdapter<String>(getActivity().getApplicationContext(), android.R.layout.simple_list_item_1,dataList);
+        adapter = new ArrayAdapter<String>(getActivity().getApplicationContext(), android.R.layout.simple_list_item_1, dataList);
         lv_areas_list.setAdapter(adapter);
 
         return view;
@@ -85,30 +86,44 @@ public class ChooseAreaFragment extends Fragment {
     }
 
     @Override
-    public void onActivityCreated( Bundle savedInstanceState) {
+    public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
         coolWeatherDB = CoolWeatherDB.getInstance(getActivity().getApplicationContext());
         lv_areas_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (currentLevel == LEVEL_PROVINCE){
+                if (currentLevel == LEVEL_PROVINCE) {
                     selectedProvince = provinceList.get(position);
                     queryCities();
-                }else if (currentLevel == LEVEL_CITY){
+                } else if (currentLevel == LEVEL_CITY) {
                     selectedCity = cityList.get(position);
                     queryCounties();
-                }else if (currentLevel == LEVEL_COUNTY){
+                } else if (currentLevel == LEVEL_COUNTY) {
                     //点击县区时，获取某一县区的天气信息
                     String weatherId = countyList.get(position).getWeatherId();
-                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
+                    SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getActivity()).edit();
+                    editor.putString("weather_id",weatherId);
 
-                    //将天气代码传入activity中
-                    intent.putExtra("weather_id",weatherId);
-                    startActivity(intent);
+                    //判断调用此碎片的是哪一个activity,目的就是实现能够在WeatherActivity界面进行地区的转换
+                    if (getActivity() instanceof MainActivity) {
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
 
-                    //当跳转到WeatherActivity之后，此activity关闭
-//                    ChooseAreaActivty.this.finish();
+                        //将天气代码传入activity中
+                        intent.putExtra("weather_id", weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    } else if (getActivity() instanceof WeatherActivity) {
+                        //获取WeatherActivity实例，关闭滑动菜单，显示下拉刷新进度条，请求天气信息
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefreshLayout.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                        //加载省级数据
+                        queryProvinces();
+
+                    }
+
                 }
             }
         });
@@ -186,8 +201,8 @@ public class ChooseAreaFragment extends Fragment {
 
     /**
      * @param address 省市县的代码
-     * @param type 省市县等级
-     *             根据传入的代号和类型向服务器查询省市县数据
+     * @param type    省市县等级
+     *                根据传入的代号和类型向服务器查询省市县数据
      */
     private void queryFromServer(final String address, final String type) {
 
