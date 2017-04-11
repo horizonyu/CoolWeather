@@ -1,6 +1,7 @@
 package com.example.horizon.coolweather.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -23,6 +24,7 @@ import com.bumptech.glide.Glide;
 import com.example.horizon.coolweather.R;
 import com.example.horizon.coolweather.gson.Forecast;
 import com.example.horizon.coolweather.gson.Weather;
+import com.example.horizon.coolweather.service.AutoUpdateService;
 import com.example.horizon.coolweather.util.HttpCallbackListener;
 import com.example.horizon.coolweather.util.HttpUtil;
 import com.example.horizon.coolweather.util.Utility;
@@ -170,6 +172,9 @@ public class WeatherActivity extends Activity {
                             editor.apply();
                             showWeatherInfo(weather);
 
+                            //自动更新天气信息
+                            Intent intent = new Intent(WeatherActivity.this, AutoUpdateService.class);
+                            startService(intent);
                         } else {
                             Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
 
